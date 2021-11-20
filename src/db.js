@@ -30,7 +30,9 @@ export const getStudentStat = async (obj) => {
 	await fetch(`${link}/student/status?studentUsername=${obj.studentUsername}&courseId=${obj.courseId}`)
     .then(response => response.json())
     .then(data => x = data);
-   return x
+    if (x.length == 0) return "NotEnroll"
+    if (x[0]["Verify_status"] == 'Accept') return "Accepted"
+   return "Waiting"
 };
 
 export const getReview = async (obj) => {
@@ -93,6 +95,7 @@ export const enroll = async (obj) => {
 
 export const cancelEnrollment = async (obj) => {
     var x = null
+    console.log(obj)
 	await fetch(`${link}/enrollment/cancel?studentUsername=${obj.studentUsername}&courseId=${obj.courseId}`)
     .then(response => response.json())
     .then(data => x = data);
@@ -114,3 +117,54 @@ export const isAlreadyEnroll = async (susername,cid) => {
    return x
 };
 */
+
+export const showUser= async () => {
+    var x = null
+	await fetch(`${link}/user/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+
+export const showEnroll = async () => {
+    var x = null
+	await fetch(`${link}/enroll/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+export const showEnrollment = async () => {
+    var x = null
+	await fetch(`${link}/enrollment/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+export const showReview = async () => {
+    var x = null
+	await fetch(`${link}/review/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+export const showMember = async () => {
+    var x = null
+	await fetch(`${link}/member/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+export const showTutor = async () => {
+    var x = null
+	await fetch(`${link}/tutor/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
+export const showStudent = async () => {
+    var x = null
+	await fetch(`${link}/student/show`)
+    .then(response => response.json())
+    .then(data => x = data);
+   return x
+};
