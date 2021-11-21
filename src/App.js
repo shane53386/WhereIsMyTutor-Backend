@@ -1,14 +1,9 @@
 import "./App.css";
 import firebase from "./firebase";
-import * as db from './db.js'
 import { useState, useEffect } from "react";
 
-
-const App = () => {
+function App() {
 	const ref = firebase.firestore().collection("courses");
-	const userCol = ["Username","Password","Email","Display_name","Profile_picture_url","Firstname","Lastname","Birthday"]
-	const studentCol = ["Username","Education_level"]
-	const tutorCol = ["Username","Citizen_id","Citizen_image_url","bank_account","Account_type","Sid"]
 
 	const enrollCol = ["Eid","Cid","Susername"]
 	const enrollmentCol = ["Enrollment_id","Verify_date","Image_url","Request_date","Verify_status","Sid"]
@@ -16,23 +11,20 @@ const App = () => {
 	const memberCol = ["Cid","Susername"]
 	const allCol = [userCol,studentCol,tutorCol,enrollCol,enrollmentCol,reviewCol,memberCol]
 	const allLabel = ["USER","STUDENT","TUTOR",'ENROLL','ENROLLMENT','REVIEW','MEMBER']
-
-
   const [data, setData] = useState([]);
 	const [keyword, setKeyword] = useState("");
 	const [searchResult, setSearchResult] = useState([]);
-  const [courseId,setCourseId] = useState();
-  const config = {
+
+	const config = {
 		search: keyword, // -> courseName, tutorName, lessonList
-		subject: "Mathematics",
+		subject: "",
 		min: 0, // default is 0
-		max: -1, // “All” = -1
-		courseDay: "Weekend", // "Weekend", "Weekday", "Mixed"
-		learningType: "Online", //"Online", "Offline", "Mixed"
+		max: 20000, // “All” = -1
+		courseDay: "Mixed", // "Weekend", "Weekday", "Mixed"
+		learningType: "Offline", //"Online", "Offline", "Mixed"
 		sortType: "Date", // “Date”, “Price”
 		isAscending: true,
 	};
-
 
 	useEffect(() => {
 		getCourse();
@@ -43,7 +35,7 @@ const App = () => {
 			const courses = [];
 			querySnapShot.forEach((res) => {
 				const cinfo = res.data();
-				cinfo.courseId = res.id;
+				// cinfo.courseId = res.id;
 				courses.push(cinfo);
 			});
 			setSearchResult(courses);
@@ -137,11 +129,25 @@ const App = () => {
 		ref.doc(courseId).update(courseInfo);
 	}
 
-  async function getCourseById() {
-    const doc = await ref.doc(courseId).get();
-    console.log(doc.data())
-    return doc.data()
-}
+	async function getCourseById(courseId) {
+		const doc = await ref.doc(courseId).get();
+		setSearchResult([doc.data()]);
+		return doc.data();
+	}
+
+	async function getCourseByTutor(tutorUsername) {
+		const courses = [];
+		const snapshot = await ref
+			.where("tutorUsername", "==", tutorUsername)
+			.get();
+		snapshot.forEach((doc) => {
+			courses.push(doc.data());
+		});
+		setSearchResult(courses);
+		return courses;
+	}
+
+
 	async function addCourse(courseInfo) {
 		const ncourse = {
 			courseName: "Calculus III",
@@ -156,195 +162,101 @@ const App = () => {
 			},
 		};
 		const res = await ref.add(ncourse);
-		ref.doc(res.id).update({ courseId: res.id , createDate: new Date()});
+		ref.doc(res.id).update({ courseId: res.id, createDate: new Date() });
 	}
-	/* --------------------- sql ---------------------------- */
-const [coureInfo_tUsername,setCoureInfo_tUsername] = useState()
-  const [coureInfo_cId,setCoureInfo_Cid] = useState()
 
-  const [studentStat_sUsername,setStudentStat_sUsername] = useState()
-  const [studentStat_cId,setStudentStat_cId] = useState()
-  
-  const [review_cId,setReview_cId] = useState()
+	function searchCourse(config) {
+		console.log(config);
+		const result = data.filter((course) => {
+			return (
+				(course.courseName.toLowerCase().includes(keyword) ||
+					course.lesson.find((e) =>
+						e.toLowerCase().includes(keyword)
+					) ||
+					course.tutorUsername.toLowerCase().includes(keyword)) &&
+				course.price >= config.min &&
+				course.price <= (config.max == -1 ? Infinity : config.max) &&
+				(config.subject == ""
+					? true
+					: course.subject == config.subject) &&
+				course.learningType == config.learningType &&
+				findCourseDay(course.timeSlot) == config.courseDay
+			);
+		});
+		result.sort(function (a, b) {
+			const type = config.sortType;
+			const isAscending = config.isAscending;
+			if (type == "Price" && isAscending) {
+				return a.price - b.price;
+			} else if (type == "Price" && !isAscending) {
+				return b.price - a.price;
+			} else if (type == "Date" && isAscending) {
+				return a.createDate - b.createDate;
+			} else if (type == "Date" && !isAscending) {
+				return b.createDate - a.createDate;
+			}
+		});
+		console.log(result);
+		setSearchResult(result);
+	}
 
-  const [member_cId,setMember_cId] = useState()
+	function findCourseDay(timeSlot) {
+		// const timeSlot = { Sunday: [] };
+		const weekEnd = ["Sunday", "Saturday"];
+		const weekDay = [
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+		];
+		const day = Object.keys(timeSlot);
+		if (
+			day.some(
+				(d) =>
+					weekEnd.includes(d) && day.some((d) => weekDay.includes(d))
+			)
+		)
+			return "Mixed";
+		else if (
+			day.some(
+				(d) =>
+					!weekEnd.includes(d) && day.some((d) => weekDay.includes(d))
+			)
+		)
+			return "Weekday";
+		else if (
+			day.some(
+				(d) =>
+					weekEnd.includes(d) && day.some((d) => !weekDay.includes(d))
+			)
+		)
+			return "Weekend";
+	}
 
-  const [courseEnrollment_cId,setCourseEnrollment_cId] = useState()
-  
-  const [acceptEnrollment_eId, setAcceptEnrollment_eId] = useState()
-  const [acceptEnrollment_accept, setAcceptEnrollment_accept] = useState()
-  
-  const [deleteCourse_cId,setDeleteCourse_cId] = useState()
-  
-  const [enroll_sUsername,setEnroll_sUsername] = useState()
-  const [enroll_cId,setEnroll_cId] = useState()
-  
-  const [cancelEnrollment_sUsername,setCancelEnrollment_sUsername] = useState()
-  const [cancelEnrollment_cId,setCancelEnrollment_cId] = useState()
-  
-  const [user,setUser] = useState([])
-  const [student,setStudent] = useState()
-  const [tutor,setTutor] = useState()
-  const [enroll_,setEnroll_] = useState()
-  const [enrollment,setEnrollment] = useState()
-  const [review,setReview] = useState()
-  const [member,setMember] = useState()	
-  const [change,setChange] = useState(true)
-  const allTable = [user,student,tutor,enroll_,enrollment,review,member]
-  //ok
-  function getTutor(){
-    db.getTutor()
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-  //ok
-  function getStudent(){
-    db.getStudent()
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
+	function updateCourse(courseId, courseInfo) {
+		const ncourse = {
+			// courseName: "Calculus III",
+			// subject: "Mathematics",
+			// lesson: ["A"],
+			// price: 20000,
+			// learningType: "Online",
+			// tutorUsername: "John",
+			// timeSlot: {
+			// 	Monday: [{ start: "09:00", end: "12:00" }],
+			// 	Sunday: [{ start: "09:00", end: "12:00" }],
+			// },
+			capacity: 50,
+			courseHour: 24,
+			description: "ไม่ลง ไม่รู้",
+		};
+		ref.doc("ApjDLlL0CoQR5ipP4IVE").update(ncourse);
+	}
 
-  function getCourseInfo(){
-    db.getCourseInfo({tutorUsername : coureInfo_tUsername
-      , courseId : coureInfo_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
+	function deleteCourse(id) {
+		ref.doc(id).delete();
+	}
 
-  function getStudentStat(){
-    db.getStudentStat({studentUsername : studentStat_sUsername
-      , courseId : studentStat_cId })
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function getReview(){
-    db.getReview({courseId : review_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function getMember(){
-    db.getMember({courseId : member_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  
-  function getCourseEnrollment(){
-    db.getCourseEnrollment({ courseId : courseEnrollment_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-  
-  function accept(){
-    db.acceptEnrollment({enrollmentId : acceptEnrollment_eId
-      , accept : true} )
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function reject(){
-    db.acceptEnrollment({enrollmentId : acceptEnrollment_eId
-      , accept : false})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function deleteCourse(){
-    db.deleteCourse({courseId : deleteCourse_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function enroll(){
-    db.enroll({studentUsername : enroll_sUsername
-      , courseId : enroll_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-
-  function cancelEnrollment(){
-    db.cancelEnrollment({studentUsername : cancelEnrollment_sUsername
-      , courseId : cancelEnrollment_cId})
-    .then(res=>{
-      console.log(res)
-	  setChange(!change)
-    })
-  }
-  
-  /*-------------------for show -------------------*/
-
-  useEffect( () =>{
-	db.showUser()
-	.then(res=>setUser([...res]))
-	db.showEnroll()
-	.then(res=>setEnroll_([...res]))
-	db.showEnrollment()
-	.then(res=>setEnrollment([...res]))
-	db.showStudent()
-	.then(res=>setStudent([...res]))
-	db.showTutor()
-	.then(res=>setTutor([...res]))
-	db.showMember()
-	.then(res=>setMember([...res]))
-	db.showReview()
-	.then(res=>setReview([...res]))
-
-
-
-  },[change])
- 
-function genUser(col,val,label){
-	return (
-		<div>
-			<br/>
-		<b>{label}</b> 
-			<br/>
-			<table>
-				<tr>
-				{col.map(element => {
-					return (<th>{element}</th>	)
-				})
-				}
-				</tr>
-				{val && val.map((value,key)=>{
-					return (<tr>
-							{col.map(element => {
-								return (<td>{value[element]}</td>	)
-							})
-							}
-						</tr>)
-
-
-				})}
-			</table>
-			</div>
-	)
-
-}
 	return (
 		<div className="App">
 
@@ -364,13 +276,20 @@ function genUser(col,val,label){
 					setKeyword(e.target.value.trim().toLowerCase())
 				}
 			/>
+			<br />
+			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
+				Get
+			</button>
 			<button onClick={getCourse}>Get course</button>
 			<button onClick={() => searchCourse(config)}>Search course</button>
 			<button onClick={addCourse}>Add course</button>
 			<button onClick={updateCourse}>Update course</button>
-      <input type="text" value={courseId} 
-              onChange={e => setCourseId(e.target.value)} />
-      <button onClick={getCourseById}>get course by id</button>
+			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
+				Get course by ID
+			</button>
+			<button onClick={() => getCourseByTutor("John")}>
+				Get course by tutor
+			</button>
 			<hr />
 			<div>
 				<ul>
@@ -554,16 +473,7 @@ function genUser(col,val,label){
       </button>
       </div>
 			</div>
-
-				<br/>
-				----------------------------------------------------
-				<br/>
-			{allCol.map((value,i)=>{
-				return (genUser(allCol[i],allTable[i],allLabel[i]))
-				
-			})
-			}
-			</header>
+      </header>
 		</div>
 	);
 }
