@@ -155,7 +155,7 @@ function App() {
 			// },
 			capacity: 50,
 			courseHour: 24,
-			description: "ไม่ลง ไม่รู้"
+			description: "ไม่ลง ไม่รู้",
 		};
 		ref.doc("ApjDLlL0CoQR5ipP4IVE").update(ncourse);
 	}
@@ -181,6 +181,7 @@ function App() {
 					setKeyword(e.target.value.trim().toLowerCase())
 				}
 			/>
+			<br />
 			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
 				Get
 			</button>
@@ -191,7 +192,9 @@ function App() {
 			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
 				Get course by ID
 			</button>
-			<button onClick={()=>getCourseByTutor("John")}>Get course by tutor</button>
+			<button onClick={() => getCourseByTutor("John")}>
+				Get course by tutor
+			</button>
 			<hr />
 			<div>
 				<ul>
