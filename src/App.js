@@ -16,39 +16,147 @@ const App = () => {
 	const memberCol = ["Cid","Susername"]
 	const allCol = [userCol,studentCol,tutorCol,enrollCol,enrollmentCol,reviewCol,memberCol]
 	const allLabel = ["USER","STUDENT","TUTOR",'ENROLL','ENROLLMENT','REVIEW','MEMBER']
-	const [data, setData] = useState([]);
+
+
+  const [data, setData] = useState([]);
+	const [keyword, setKeyword] = useState("");
+	const [searchResult, setSearchResult] = useState([]);
+  const [courseId,setCourseId] = useState();
+  const config = {
+		search: keyword, // -> courseName, tutorName, lessonList
+		subject: "Mathematics",
+		min: 0, // default is 0
+		max: -1, // “All” = -1
+		courseDay: "Weekend", // "Weekend", "Weekday", "Mixed"
+		learningType: "Online", //"Online", "Offline", "Mixed"
+		sortType: "Date", // “Date”, “Price”
+		isAscending: true,
+	};
+
 
 	useEffect(() => {
 		getCourse();
 	}, []);
 
 	function getCourse() {
-		/*ref.onSnapshot((querySnapShot) => {
+		ref.onSnapshot((querySnapShot) => {
 			const courses = [];
 			querySnapShot.forEach((res) => {
 				const cinfo = res.data();
 				cinfo.courseId = res.id;
 				courses.push(cinfo);
 			});
+			setSearchResult(courses);
 			setData(courses);
-      console.log(courses);
-		});*/
+		});
 	}
 
-	function searchCourse() {}
+	function searchCourse(config) {
+		// console.log(config.search);
+		const order = config.isAscending ? "asc" : "desc";
+		const result = data.filter((course) => {
+			return (
+				(course.courseName.toLowerCase().includes(keyword) ||
+					course.lesson.find((e) =>
+						e.toLowerCase().includes(keyword)
+					) ||
+					course.tutorUsername.toLowerCase().includes(keyword)) &&
+				course.price >= config.min &&
+				course.price <= (config.max == -1 ? Infinity : config.max) &&
+				course.subject == config.subject &&
+				course.learningType == config.learningType &&
+				findCourseDay(course.timeSlot) == config.courseDay
+			);
+		});
+		result.sort(function (a, b) {
+			const type = config.sortType;
+			const isAscending = config.isAscending;
+			if (type == "Price" && isAscending) {
+				return a.price - b.price;
+			} else if (type == "Price" && !isAscending) {
+				return b.price - a.price;
+			} else if (type == "Date" && isAscending) {
+				return a.createDate - b.createDate;
+			} else if (type == "Date" && !isAscending) {
+				return b.createDate - a.createDate;
+			}
+		});
+		setSearchResult(result);
+	}
+
+  function findCourseDay(timeSlot) {
+		// const timeSlot = { Sunday: [] };
+		const weekEnd = ["Sunday", "Saturday"];
+		const weekDay = [
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+		];
+		const day = Object.keys(timeSlot);
+		if (
+			day.some(
+				(d) =>
+					weekEnd.includes(d) && day.some((d) => weekDay.includes(d))
+			)
+		)
+			return "Mixed";
+		else if (
+			day.some(
+				(d) =>
+					!weekEnd.includes(d) && day.some((d) => weekDay.includes(d))
+			)
+		)
+			return "Weekday";
+		else if (
+			day.some(
+				(d) =>
+					weekEnd.includes(d) && day.some((d) => !weekDay.includes(d))
+			)
+		)
+			return "Weekend";
+	}
 
 	function deleteCourse(id) {
-		//ref.doc(id).delete();
+		ref.doc(id).delete();
+	}
+  function updateCourse(courseId, courseInfo) {
+		const ncourse = {
+			courseName: "Calculus III",
+			subject: "Mathematics",
+			lesson: ["A"],
+			price: 20000,
+			learningType: "Online",
+			tutorUsername: "Jack",
+			timeSlot: {
+				Monday: [{ start: "09:00", end: "12:00" }],
+				Sunday: [{ start: "09:00", end: "12:00" }],
+			},
+		};
+		ref.doc(courseId).update(courseInfo);
 	}
 
-	function addCourse() {
+  async function getCourseById() {
+    const doc = await ref.doc(courseId).get();
+    console.log(doc.data())
+    return doc.data()
+}
+	async function addCourse(courseInfo) {
 		const ncourse = {
-			courseName: "Calculus II",
+			courseName: "Calculus III",
 			subject: "Mathematics",
-			lesson: ["A", "B"],
-			price: 18000,
+			lesson: ["A"],
+			price: 20000,
+			learningType: "Online",
+			tutorUsername: "Jack",
+			timeSlot: {
+				Monday: [{ start: "09:00", end: "12:00" }],
+				Sunday: [{ start: "09:00", end: "12:00" }],
+			},
 		};
-		//ref.add(ncourse);
+		const res = await ref.add(ncourse);
+		ref.doc(res.id).update({ courseId: res.id , createDate: new Date()});
 	}
 	/* --------------------- sql ---------------------------- */
 const [coureInfo_tUsername,setCoureInfo_tUsername] = useState()
@@ -241,35 +349,58 @@ function genUser(col,val,label){
 		<div className="App">
 
       		<header className="App-header">
-			<h1>Courses</h1>
+          <h1>Courses</h1>
+			<input
+				type="text"
+				style={{
+					width: "20rem",
+					background: "#F2F1F9",
+					border: "none",
+					padding: "0.5rem",
+				}}
+				value={keyword}
+				placeholder={"search course"}
+				onChange={(e) =>
+					setKeyword(e.target.value.trim().toLowerCase())
+				}
+			/>
 			<button onClick={getCourse}>Get course</button>
+			<button onClick={() => searchCourse(config)}>Search course</button>
 			<button onClick={addCourse}>Add course</button>
-			{/* <button onClick={searchCourse}>Search course</button> */}
+			<button onClick={updateCourse}>Update course</button>
+      <input type="text" value={courseId} 
+              onChange={e => setCourseId(e.target.value)} />
+      <button onClick={getCourseById}>get course by id</button>
+			<hr />
 			<div>
-				{data.map((course) => {
-					return (
-						<div key={course.key}>
-							<img src={course.imageURL} width={300} />
-							<h2>{course.courseName}</h2>
-							<h4>{course.subject}</h4>
-							<h4>
-								{course.lesson.forEach((lesson) => {
-									return <h4>{lesson}</h4>;
-								})}
-							</h4>
-							<button
-								onClick={() => {
-									deleteCourse(course.key);
-								}}
-							>
-								Delete
-							</button>
-							<div>
-								---------------------------------------------
-							</div>
-						</div>
-					);
-				})}
+				<ul>
+					{searchResult.map((course) => {
+						return (
+							<li key={course.courseId}>
+								<img src={course.imageURL} width={300} />
+								<h2>{course.courseName}</h2>
+								<h4>{course.subject}</h4>
+								<h4>{course.learningType}</h4>
+								<h4>{course.price}</h4>
+								<h4>
+									{course.lesson.map((lesson) => {
+										return <span>{lesson} </span>;
+									})}
+								</h4>
+								<h4>{course.tutorUsername}</h4>
+								<button
+									onClick={() => {
+										deleteCourse(course.courseId);
+									}}
+								>
+									Delete
+								</button>
+								<hr />
+							</li>
+						);
+					})}
+				</ul>
+
 				---------------------------------------------
 				---------------------------------------------<br/>
 				<button onClick={getTutor}>

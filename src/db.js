@@ -1,5 +1,5 @@
 
-const link = "http://f150-2001-fb1-9c-a6a2-dc57-e723-4960-da1e.ngrok.io"
+const link = "https://bff3-2001-fb1-9f-abca-bcf3-5df2-682d-fe72.ngrok.io"
 export const getTutor = async () => {
     var x = null
 	await fetch(`${link}/tutor`)
@@ -18,8 +18,18 @@ export const getStudent = async () => {
 
 export const getCourseInfo = async (obj) => {
     var x = null
-    console.log("21",obj)
-	await fetch(`${link}/course/info?tutorUsername=${obj.tutorUsername}&courseId=${obj.courseId}`)
+    var l = [{tutorUsername : "mek",courseId : '10000'} , {tutorUsername : "kem",courseId : '10000'}
+,{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'}
+,{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'}
+,{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'},{tutorUsername : "kem",courseId : '1000'}]
+    var tList = [] ; var cList = []
+    l.forEach(e=>{
+        tList.push(e.tutorUsername)
+        cList.push(e.courseId)
+    })
+    var tutorUsername = tList.join(',')
+    var coursId = cList.join(',')
+	await fetch(`http://localhost:3001/course/info?tutorUsername=${tutorUsername}&courseId=${coursId}`)
     .then(response => response.json())
     .then(data => x = data);
    return x
