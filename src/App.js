@@ -11,11 +11,11 @@ function App() {
 
 	const config = {
 		search: keyword, // -> courseName, tutorName, lessonList
-		subject: "Mathematics",
+		subject: "",
 		min: 0, // default is 0
-		max: -1, // “All” = -1
-		courseDay: "Weekend", // "Weekend", "Weekday", "Mixed"
-		learningType: "Online", //"Online", "Offline", "Mixed"
+		max: 20000, // “All” = -1
+		courseDay: "Mixed", // "Weekend", "Weekday", "Mixed"
+		learningType: "Offline", //"Online", "Offline", "Mixed"
 		sortType: "Date", // “Date”, “Price”
 		isAscending: true,
 	};
@@ -29,12 +29,30 @@ function App() {
 			const courses = [];
 			querySnapShot.forEach((res) => {
 				const cinfo = res.data();
-				cinfo.courseId = res.id;
+				// cinfo.courseId = res.id;
 				courses.push(cinfo);
 			});
 			setSearchResult(courses);
 			setData(courses);
 		});
+	}
+
+	async function getCourseById(courseId) {
+		const doc = await ref.doc(courseId).get();
+		setSearchResult([doc.data()]);
+		return doc.data();
+	}
+
+	async function getCourseByTutor(tutorUsername) {
+		const courses = [];
+		const snapshot = await ref
+			.where("tutorUsername", "==", tutorUsername)
+			.get();
+		snapshot.forEach((doc) => {
+			courses.push(doc.data());
+		});
+		setSearchResult(courses);
+		return courses;
 	}
 
 	async function addCourse(courseInfo) {
@@ -51,12 +69,11 @@ function App() {
 			},
 		};
 		const res = await ref.add(ncourse);
-		ref.doc(res.id).update({ courseId: res.id , createDate: new Date()});
+		ref.doc(res.id).update({ courseId: res.id, createDate: new Date() });
 	}
 
 	function searchCourse(config) {
-		// console.log(config.search);
-		const order = config.isAscending ? "asc" : "desc";
+		console.log(config);
 		const result = data.filter((course) => {
 			return (
 				(course.courseName.toLowerCase().includes(keyword) ||
@@ -66,7 +83,9 @@ function App() {
 					course.tutorUsername.toLowerCase().includes(keyword)) &&
 				course.price >= config.min &&
 				course.price <= (config.max == -1 ? Infinity : config.max) &&
-				course.subject == config.subject &&
+				(config.subject == ""
+					? true
+					: course.subject == config.subject) &&
 				course.learningType == config.learningType &&
 				findCourseDay(course.timeSlot) == config.courseDay
 			);
@@ -84,6 +103,7 @@ function App() {
 				return b.createDate - a.createDate;
 			}
 		});
+		console.log(result);
 		setSearchResult(result);
 	}
 
@@ -123,18 +143,21 @@ function App() {
 
 	function updateCourse(courseId, courseInfo) {
 		const ncourse = {
-			courseName: "Calculus III",
-			subject: "Mathematics",
-			lesson: ["A"],
-			price: 20000,
-			learningType: "Online",
-			tutorUsername: "Jack",
-			timeSlot: {
-				Monday: [{ start: "09:00", end: "12:00" }],
-				Sunday: [{ start: "09:00", end: "12:00" }],
-			},
+			// courseName: "Calculus III",
+			// subject: "Mathematics",
+			// lesson: ["A"],
+			// price: 20000,
+			// learningType: "Online",
+			// tutorUsername: "John",
+			// timeSlot: {
+			// 	Monday: [{ start: "09:00", end: "12:00" }],
+			// 	Sunday: [{ start: "09:00", end: "12:00" }],
+			// },
+			capacity: 50,
+			courseHour: 24,
+			description: "ไม่ลง ไม่รู้"
 		};
-		ref.doc(courseId).update(courseInfo);
+		ref.doc("ApjDLlL0CoQR5ipP4IVE").update(ncourse);
 	}
 
 	function deleteCourse(id) {
@@ -158,10 +181,17 @@ function App() {
 					setKeyword(e.target.value.trim().toLowerCase())
 				}
 			/>
+			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
+				Get
+			</button>
 			<button onClick={getCourse}>Get course</button>
 			<button onClick={() => searchCourse(config)}>Search course</button>
 			<button onClick={addCourse}>Add course</button>
 			<button onClick={updateCourse}>Update course</button>
+			<button onClick={() => getCourseById("58SrhQcdtP4wvTVqxOX8")}>
+				Get course by ID
+			</button>
+			<button onClick={()=>getCourseByTutor("John")}>Get course by tutor</button>
 			<hr />
 			<div>
 				<ul>
