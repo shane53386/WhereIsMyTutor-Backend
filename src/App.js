@@ -1,10 +1,13 @@
 import "./App.css";
 import firebase from "./firebase";
 import { useState, useEffect } from "react";
-
+import * as db from './db.js'
 function App() {
 	const ref = firebase.firestore().collection("courses");
 
+  const userCol = ["Username","Password","Email","Display_name","Profile_picture_url","Firstname","Lastname","Birthday"]
+	const studentCol = ["Username","Education_level"]
+	const tutorCol = ["Username","Citizen_id","Citizen_image_url","bank_account","Account_type","Sid"]
 	const enrollCol = ["Eid","Cid","Susername"]
 	const enrollmentCol = ["Enrollment_id","Verify_date","Image_url","Request_date","Verify_status","Sid"]
 	const reviewCol = ["Cid","Review_id","Rating","Content","Susername"]
@@ -15,6 +18,39 @@ function App() {
 	const [keyword, setKeyword] = useState("");
 	const [searchResult, setSearchResult] = useState([]);
 
+
+  const [coureInfo_tUsername,setCoureInfo_tUsername] = useState()
+  const [coureInfo_cId,setCoureInfo_Cid] = useState()
+
+  const [studentStat_sUsername,setStudentStat_sUsername] = useState()
+  const [studentStat_cId,setStudentStat_cId] = useState()
+  
+  const [review_cId,setReview_cId] = useState()
+
+  const [member_cId,setMember_cId] = useState()
+
+  const [courseEnrollment_cId,setCourseEnrollment_cId] = useState()
+  
+  const [acceptEnrollment_eId, setAcceptEnrollment_eId] = useState()
+  const [acceptEnrollment_accept, setAcceptEnrollment_accept] = useState()
+  
+  const [deleteCourse_cId,setDeleteCourse_cId] = useState()
+  
+  const [enroll_sUsername,setEnroll_sUsername] = useState()
+  const [enroll_cId,setEnroll_cId] = useState()
+  
+  const [cancelEnrollment_sUsername,setCancelEnrollment_sUsername] = useState()
+  const [cancelEnrollment_cId,setCancelEnrollment_cId] = useState()
+  
+  const [user,setUser] = useState([])
+  const [student,setStudent] = useState()
+  const [tutor,setTutor] = useState()
+  const [enroll_,setEnroll_] = useState()
+  const [enrollment,setEnrollment] = useState()
+  const [review,setReview] = useState()
+  const [member,setMember] = useState()	
+  const [change,setChange] = useState(true)
+  const allTable = [user,student,tutor,enroll_,enrollment,review,member]
 	const config = {
 		search: keyword, // -> courseName, tutorName, lessonList
 		subject: "",
@@ -257,6 +293,160 @@ function App() {
 		ref.doc(id).delete();
 	}
 
+
+  function getTutor(){
+    db.getTutor()
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+  //ok
+  function getStudent(){
+    db.getStudent()
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function getCourseInfo(){
+    db.getCourseInfo({tutorUsername : coureInfo_tUsername
+      , courseId : coureInfo_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function getStudentStat(){
+    db.getStudentStat({studentUsername : studentStat_sUsername
+      , courseId : studentStat_cId })
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function getReview(){
+    db.getReview({courseId : review_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function getMember(){
+    db.getMember({courseId : member_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  
+  function getCourseEnrollment(){
+    db.getCourseEnrollment({ courseId : courseEnrollment_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+  
+  function accept(){
+    db.acceptEnrollment({enrollmentId : acceptEnrollment_eId
+      , accept : true} )
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function reject(){
+    db.acceptEnrollment({enrollmentId : acceptEnrollment_eId
+      , accept : false})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function deleteCourse(){
+    db.deleteCourse({courseId : deleteCourse_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function enroll(){
+    db.enroll({studentUsername : enroll_sUsername
+      , courseId : enroll_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+  function cancelEnrollment(){
+    db.cancelEnrollment({studentUsername : cancelEnrollment_sUsername
+      , courseId : cancelEnrollment_cId})
+    .then(res=>{
+      console.log(res)
+	  setChange(!change)
+    })
+  }
+
+
+  useEffect( () =>{
+    db.showUser()
+    .then(res=>setUser([...res]))
+    db.showEnroll()
+    .then(res=>setEnroll_([...res]))
+    db.showEnrollment()
+    .then(res=>setEnrollment([...res]))
+    db.showStudent()
+    .then(res=>setStudent([...res]))
+    db.showTutor()
+    .then(res=>setTutor([...res]))
+    db.showMember()
+    .then(res=>setMember([...res]))
+    db.showReview()
+    .then(res=>setReview([...res]))
+  
+  
+  
+    },[change])
+
+    function genUser(col,val,label){
+      return (
+        <div>
+          <br/>
+        <b>{label}</b> 
+          <br/>
+          <table>
+            <tr>
+            {col.map(element => {
+              return (<th>{element}</th>	)
+            })
+            }
+            </tr>
+            {val && val.map((value,key)=>{
+              return (<tr>
+                  {col.map(element => {
+                    return (<td>{value[element]}</td>	)
+                  })
+                  }
+                </tr>)
+    
+    
+            })}
+          </table>
+          </div>
+      )
+    
+    }
+    
 	return (
 		<div className="App">
 
@@ -473,7 +663,16 @@ function App() {
       </button>
       </div>
 			</div>
-      </header>
+
+				<br/>
+				----------------------------------------------------
+				<br/>
+			{allCol.map((value,i)=>{
+				return (genUser(allCol[i],allTable[i],allLabel[i]))
+				
+			})
+			}
+			</header>
 		</div>
 	);
 }
